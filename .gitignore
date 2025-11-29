@@ -6,3 +6,7 @@ stsg_venv/
 
 # Git directory
 .git/
+
+# Auth
+
+auth/
