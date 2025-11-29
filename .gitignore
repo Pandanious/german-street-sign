@@ -3,3 +3,6 @@ Data/
 
 # Virtual environment
 stsg_venv/
+
+# Git directory
+.git/
