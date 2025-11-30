@@ -10,3 +10,5 @@ stsg_venv/
 # Auth
 
 auth/
+
+.tmp/
