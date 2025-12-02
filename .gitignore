@@ -4,6 +4,8 @@ Data/
 # Virtual environment
 stsg_venv/
 
+stgs_sam_env/
+
 # Git directory
 .git/
 
@@ -12,3 +14,10 @@ stsg_venv/
 auth/
 
 .tmp/
+
+src/__pycache__
+
+models/
+mask_gen/
+Segmentation/
+

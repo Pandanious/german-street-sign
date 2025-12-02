@@ -1,5 +1,6 @@
 # file to debug TensorFlow installation
-
+import keras
+from keras.utils import image_dataset_from_directory
 
 
 import os
