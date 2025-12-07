@@ -3,24 +3,27 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 import torch.nn as nn
 from pre_process_images_torch import pre_process
-from models_torch import s_custom_model,GTSRBModel
+from models_torch import s_custom_model,GTSRBModel,LTSModel
 
 epoch = 30
 
-
+# class -> model as argument, values at model selection at __init__
 def train(num_epochs = epoch, lr = 1e-3):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_ds,val_ds, _ = pre_process(batchsize = 64)
     num_classes = train_ds.dataset.num_classes
-    model = GTSRBModel(num_classes).to(device)
+    #model = GTSRBModel(num_classes).to(device)
     #model = s_custom_model(num_classes,60,60).to(device)
+    model = LTSModel(num_classes,60,60).to(device)
     criteria = nn.CrossEntropyLoss()
-    #optimizer = torch.optim.Adam(model.parameters(), lr = lr,weight_decay=1e-4)
-    #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=num_epochs, eta_min=1e-5)
-    optimizer = torch.optim.Adam(model.parameters(), lr = lr,)
-    checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/gtsrb_model_without_softmax.pt"
+    optimizer = torch.optim.Adam(model.parameters(), lr = lr,weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=num_epochs, eta_min=1e-5)
+    #optimizer = torch.optim.Adam(model.parameters(), lr = lr,)
+    #checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/gtsrb_model_without_softmax.pt"
     #checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_scheduler_weight_decay_without_softmax.pt"
-    output_metric = "/home/panda/projects/german-street-sign/models/pytorch/gtsrb_model_without_softmax.txt"
+    checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/LTSM_model.pt"
+    output_metric = "/home/panda/projects/german-street-sign/models/pytorch/LTSM_model.txt"
+    #output_metric = "/home/panda/projects/german-street-sign/models/pytorch/gtsrb_model_without_softmax.txt"
     #output_metric = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_scheduler_weight_decay_without_softmax.pt.txt"
     metric_log = []
 
@@ -44,7 +47,7 @@ def train(num_epochs = epoch, lr = 1e-3):
             running_loss += loss.item() * inputs.size(0)
             running_correct += (outputs.argmax(1) == labels).sum().item()
             total += labels.size(0)
-            #scheduler.step()
+            scheduler.step()
 
         train_loss = running_loss / total
         train_acc = running_correct / total

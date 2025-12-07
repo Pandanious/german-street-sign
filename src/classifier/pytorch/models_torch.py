@@ -35,6 +35,57 @@ class GTSRBModel(nn.Module):                                                    
         return self.classifier(x)
     
 
+class LTSModel(nn.Module):
+    def __init__(self, num_classes,img_height,img_width):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3,32,kernel_size=5,stride= 1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2,stride=2),
+
+            nn.Conv2d(32,64,kernel_size=5,stride=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2,stride=2),
+            nn.Dropout2d(p=0.15),
+
+            nn.Conv2d(64,32,kernel_size=5,stride=1,),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2,stride=2),
+            nn.Dropout2d(p=0.15),
+        )
+
+        with torch.no_grad():
+            dummy = torch.zeros(1,3,img_height,img_width)
+            flat_dim = int(self.features(dummy).numel())
+
+        self.classifier = nn.Sequential(   
+
+            nn.Flatten(),
+            nn.Linear(in_features=flat_dim,out_features=512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(in_features=512,out_features=256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(in_features=256,out_features=128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+            nn.Linear(in_features=128, out_features=num_classes),
+        )
+    def forward(self,x):
+        x = self.features(x)
+        return self.classifier(x)    
+
+
+
 
 class s_custom_model(nn.Module):
     def __init__(self, num_classes, img_height, img_width):
@@ -98,7 +149,7 @@ class s_custom_model(nn.Module):
         self.relu_f = nn.ReLU()
         self.dropout_f = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(in_features=256 , out_features=num_classes)
-        #self.softmax = nn.Softmax(dim=1)   
+         
         
         
 
@@ -138,6 +189,6 @@ class s_custom_model(nn.Module):
         x = self.relu_f(x)
         x = self.dropout_f(x)
         x = self.fc2(x)
-        #x = self.softmax(x)
+        
 
         return x
