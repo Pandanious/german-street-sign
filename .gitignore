@@ -3,7 +3,7 @@ Data/
 
 # Virtual environment
 stsg_venv/
-
+seg_cls_venv/
 stgs_sam_env/
 
 # Git directory
@@ -20,4 +20,5 @@ src/__pycache__
 models/
 mask_gen/
 Segmentation/
+yolov5/
 

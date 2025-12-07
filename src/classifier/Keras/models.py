@@ -128,12 +128,3 @@ def soham_custom_model(num_classes, imwidth,imheight):
 
     
     
-    
-    
-    
-
-if __name__=='__main__':
-
-    model = GTSRB_model(10,60,60)
-    model.summary()
-    

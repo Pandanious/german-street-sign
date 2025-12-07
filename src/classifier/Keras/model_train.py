@@ -51,7 +51,7 @@ def train():
     #print(f"Final validation accuracy: {history.history['val_accuracy'][-1]:.4f}")
     #print(f"Test loss: {test_loss:.4f}, Test accuracy: {test_acc:.4f}")
 
-    return model,history
+    return model
 
     # Iterate through whole dataset.
     #images, labels = next(iter(test_ds))

@@ -1,14 +1,10 @@
 # file to debug TensorFlow installation
-import keras
-from keras.utils import image_dataset_from_directory
 
 
-import os
-print("TMPDIR:", os.environ.get("TMPDIR"))
-print("TEST_TMPDIR:", os.environ.get("TEST_TMPDIR"))
+import torch
 
-import tensorflow as tf
-
-
-print("TF loaded, version:", tf.__version__)
-print("Devices:", tf.config.list_physical_devices())
+print(torch.__version__)
+print("cuda available?", torch.cuda.is_available())
+if torch.cuda.is_available():
+    print(torch.cuda.get_device_name())
+    print(torch.cuda.device_count())
