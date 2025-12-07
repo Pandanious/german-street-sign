@@ -17,9 +17,10 @@ auth/
 
 src/__pycache__
 src/classifier/ __pycache__
+__pycache__/
+**/__pycache__/
 
 models/
 mask_gen/
 
 yolov5/
-
