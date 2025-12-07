@@ -52,4 +52,4 @@
 
 ## Contact
 - Maintainer: Soham (soham007@gmail.com)
-- Repository: `git@github.com:soham007/german-street-sign.git`
+- Repository: `git@github.com:Pandanious/german-street-sign.git`
