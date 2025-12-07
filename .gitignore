@@ -20,6 +20,6 @@ src/classifier/__pycache__
 
 models/
 mask_gen/
-Segmentation/
+
 yolov5/
 

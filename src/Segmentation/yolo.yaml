@@ -1,0 +1,10 @@
+path: ../Data/processed_data/mask_split
+train: train/images
+val: val/images
+test: test/images
+
+nc: 4
+
+names: [prohibitory,mandatory,danger,other]
+
+
