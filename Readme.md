@@ -27,7 +27,6 @@
    - Keras baseline (historical): `python src/classifier/Keras/model_train.py`
 3. **Evaluation**
    - Torch: `python src/classifier/pytorch/model_test_torch.py --checkpoint <path>`
-   - YOLO-only sanity check: `python src/Segmentation/test_segmentation.py`
 4. **End-to-End Demo**
    - `python src/end_to_end.py --image <path>` (script expects YOLO weights + classifier checkpoints to be present).
 
@@ -50,6 +49,3 @@
 - Quantize/class-prune classifiers for edge deployment.
 - Expand augmentation policy (color constancy, blur) to match roadside conditions.
 
-## Contact
-- Maintainer: Soham (soham007@gmail.com)
-- Repository: `git@github.com:Pandanious/german-street-sign.git`
