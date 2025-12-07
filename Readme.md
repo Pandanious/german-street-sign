@@ -16,7 +16,7 @@
 ## Technical Stack
 - **Vision Models:** PyTorch 2.x, Torchvision, YOLOv5 (local hub load).
 - **Data Handling:** Pandas, Pillow, torchvision transforms, custom `GTSRBDataset`.
-- **Tooling:** Python 3.11 virtualenv (`seg_cls_venv`), Git/GitHub, SSH-based deployment keys.
+- **Tooling:** Python 3.11 virtualenv (`seg_cls_venv`), Git/GitHub.
 
 ## Responsibilities & Workflow
 1. **Data Preparation**
@@ -43,7 +43,7 @@
 ## Deployment Readiness
 - YOLO weights stored locally under `yolov5/runs/train/...`.
 - PyTorch checkpoints saved to `models/pytorch/*.pt`; accompanying metric logs provide audit trails.
-- SSH keys for repository access live in `auth/sshkey_wsl*` (ensure agent forwarding before pushing).
+
 
 ## Next Steps
 - Finalize `end_to_end.py` CLI for batch inference and visualization.
