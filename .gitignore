@@ -16,6 +16,7 @@ auth/
 .tmp/
 
 src/__pycache__
+src/classifier/__pycache__
 
 models/
 mask_gen/
