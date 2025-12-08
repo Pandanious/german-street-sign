@@ -31,8 +31,8 @@ class TS_segmenter:
 
 
 class TS_classifier:
-    model_path = "/home/panda/projects/german-street-sign/models/pytorch/LTSM_model.pt"
-    #model_path = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_scheduler_weight_decay_without_softmax.pt"
+    #model_path = "/home/panda/projects/german-street-sign/models/pytorch/LTSM_model.pt"
+    model_path = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_scheduler_weight_decay_without_softmax.pt"
     def __init__(self, model_classifier, conf_threshold):
 
         self.model_classifier = model_classifier
