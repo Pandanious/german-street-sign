@@ -54,7 +54,10 @@ print("predictions = ")
 result_dir = Path("/home/panda/projects/german-street-sign/Data/raw_data/final_test_img/Results")
 
 for img_path in sorted(img_folder.glob("*.jpg")):
+    print("-------------------------------------------------------------------------------------------------------")
+    print("\n")
     print(f"Processing {img_path.name}")
+    print("-------------------------------------------------------------------------------------------------------")
     result_segmentation = model_segmentation.do_prediction(img_path)
     img = cv2.imread(str(img_path))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -83,13 +86,21 @@ for img_path in sorted(img_folder.glob("*.jpg")):
         proc_img = transform(img_tensor).unsqueeze(0)
         print("Running Classification")
         result_classification = model_classifier.do_prediction(proc_img)
-        pred_id = result_classification.argmax(1).item()
-        #print(pred_id)
+        prob_vals, class_ids = result_classification.max(dim=1)
+        pred_id = class_ids.item()
+        pred_prob = prob_vals.item()
         pred_label = class_names.get(pred_id, f"Unknown({pred_id})")
-        #print(pred_label)
-        res_text = f"{pred_id}: {pred_label}"
-        print(res_text)
+        if pred_prob >= .70:
+        
+            print(f"Class No. {pred_id}: {pred_label}, Probability: {pred_prob}")
+            res_text = f"{pred_id}: {pred_label}"
+            
+        
+        else:
+            res_text = "Unknown Sign"
+
         cv2.rectangle(img,(xmin,ymin),(xmax,ymax),(0,255,0),8)
+        print("res_text ", res_text, "Prob: ",pred_prob )
         cv2.putText(   img,
                     res_text,
                     text_org,
