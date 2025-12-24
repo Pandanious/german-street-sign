@@ -42,3 +42,11 @@ ClassId, Name
 40,Roundabout mandatory
 41,End of no passing
 42,End of no passing for vehicles over 3.5 metric tons
+43,Mandatory Straight
+44,Mandatory Left
+45,Mandatory Right
+46,Bike Lane
+47,Bus Lane
+48,Bike-left-Pedestrian-right
+49,No-Stopping-No-Parking
+50,Pedestrian lane

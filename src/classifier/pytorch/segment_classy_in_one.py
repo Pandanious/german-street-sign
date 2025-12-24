@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from pathlib import Path
 import csv
 
-num_classes = 43
+num_classes = 51
 img_width = 60
 img_height = 60
 
@@ -51,7 +51,7 @@ model = s_custom_model(num_classes,img_height,img_width)
 model_classifier = TS_classifier(model,0.6)
 img_folder = Path("/home/panda/projects/german-street-sign/Data/raw_data/final_test_img")
 print("predictions = ")
-result_dir = Path("/home/panda/projects/german-street-sign/Data/raw_data/final_test_img/Results")
+result_dir = Path("/home/panda/projects/german-street-sign/Results")
 
 for img_path in sorted(img_folder.glob("*.jpg")):
     print("-------------------------------------------------------------------------------------------------------")

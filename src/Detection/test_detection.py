@@ -5,7 +5,7 @@ class TS_segmenter:
         self.model = torch.hub.load(
                     '/home/panda/projects/german-street-sign/yolov5',
                     'custom',  
-                    path='/home/panda/projects/german-street-sign/yolov5/runs/train/mask_yolov5m_new/weights/best.pt',  
+                    path='/home/panda/projects/german-street-sign/models/yolov5l.pt',  
  #                   path='/home/panda/projects/german-street-sign/yolov5/runs/train/mask_yolov5s_new/weights/best.pt',
                     source='local'  
                     )
