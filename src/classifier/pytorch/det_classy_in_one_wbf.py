@@ -43,30 +43,84 @@ def resize_with_aspect(img_tensor, target = 60):
 
     return img.squeeze(0)
 
+def iou_box(box,boxes):
+    x1 = np.maximum(box[0], boxes[:, 0])
+    y1 = np.maximum(box[1], boxes[:, 1])
+    x2 = np.minimum(box[2], boxes[:, 2])
+    y2 = np.minimum(box[3], boxes[:, 3])
+    w  = np.maximum(0.0, x2 - x1)
+    h  = np.maximum(0.0, y2 - y1)
+    intersection_area = w * h
+
+    box_area = (box[2]-box[0])*(box[3]-box[1])
+    boxes_area = ((boxes[:, 2]-boxes[:, 0])*(boxes[:, 3]-boxes[:, 1]))
+    union = box_area + boxes_area - intersection_area
+    return intersection_area / np.maximum(union,1e-6)
+
+def wbf(df,iou_threshold):
+    if df.empty:
+        return df
+    df = df.sort_values("confidence",ascending = False).reset_index(drop=True)
+    used = np.zeros(len(df), dtype=bool)
+    fused_rows = []
+    
+    for i in range(len(df)):
+        if used[i]:
+            continue
+        box_i = df.loc[i,["xmin","ymin","xmax","ymax"]].to_numpy(dtype=np.float32)
+        cand = []
+        scores = []
+
+        for j in range(i,len(df)):
+            if used[j]:
+                continue
+            
+            box_j = df.loc[j,["xmin","ymin","xmax","ymax"]].to_numpy(dtype=np.float32)
+            iou = iou_box(box_i,box_j[None, :])[0]
+            if iou >= iou_threshold:
+                used[j] = True
+                cand.append(box_j)
+                scores.append(float(df.loc[j, "confidence"]))
+        
+        weights = np.array(scores, dtype=np.float32)
+        cand = np.array(cand, dtype=np.float32)
+        fused_box = (cand * weights[:,None]).sum(axis = 0) / weights.sum()
+        fused_rows.append({"xmin": float(fused_box[0]),"ymin": float(fused_box[1]),"xmax": float(fused_box[2]),"ymax": float(fused_box[3]),"confidence":float(np.max(weights))})
+
+    return pd.DataFrame(fused_rows)
 
 
-def do_tiling_det(model, img_path, tile_x=1000, tile_y = 750 , overlap= 0.2):
+
+def do_tiling_det(model, img_path, tile_x=640, tile_y = 640 , overlap= 0.3, pad = 100):
 
     bgr_img = cv2.imread(str(img_path))
     if bgr_img is None:
-        return pd.DataFrame(columns=["xmin","ymin","xmax","ymax","confidence","class","name"])
+        return pd.DataFrame(columns=["xmin","ymin","xmax","ymax","confidence"])
     rgb_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2RGB)
     h,w = rgb_img.shape[:2]
 
     stride_x = int(tile_x * (1-overlap))
-    stride_x = max(1, stride_x)
+    #stride_x = max(1, stride_x)
     stride_y = int(tile_y * (1-overlap))
-    stride_y = max(1, stride_y)
+    #stride_y = max(1, stride_y)
 
 
     img_df = []
 
     for y in range(0,h,stride_y):
         for x in range(0,w,stride_x):
+            x_orig = x
+            y_orig = y
             y1 = min(y + tile_y,h)
             x1 = min(x + tile_x,w)
 
-            tile_img = rgb_img[y:y1,x:x1]
+            pad_x_orig = max(0,x_orig - pad)
+            pad_y_orig = max(0,y_orig - pad)
+            pad_x1 = min(w,x1 + pad)
+            pad_y1 = min(h,y1 + pad)
+
+            tile_img = rgb_img[pad_y_orig:pad_y1,pad_x_orig:pad_x1]
+
             if tile_img.size == 0:
                 continue
 
@@ -75,25 +129,37 @@ def do_tiling_det(model, img_path, tile_x=1000, tile_y = 750 , overlap= 0.2):
             
             df = results.pandas().xyxy[0]
             if df.empty:
-                continue
+               continue
+
 
             df = df.copy()
-            df["xmin"] = df["xmin"] + x
-            df["xmax"] = df["xmax"] + x
-            df["ymin"] = df["ymin"] + y
-            df["ymax"] = df["ymax"] + y
-            img_df.append(df)
+            df["xmin"] += pad_x_orig
+            df["xmax"] += pad_x_orig
+            df["ymin"] += pad_y_orig
+            df["ymax"] += pad_y_orig
+
+            cx = (df["xmin"] + df["xmax"]) / 2
+            cy = (df["ymin"] + df["ymax"]) / 2
+            retain = (cx >= x_orig) & (cx <= x1) & (cy >= y_orig) & (cy <= y1)
+            df = df[retain]
+
+            if not df.empty:
+                img_df.append(df)
+
+             
+ #           df = df.copy()
+  #          df["xmin"] = df["xmin"] + x
+ #           df["xmax"] = df["xmax"] + x
+  #          df["ymin"] = df["ymin"] + y
+  #          df["ymax"] = df["ymax"] + y
+  #          img_df.append(df)
+
 
     if not img_df:
-        return pd.DataFrame(columns=["xmin","ymin","xmax","ymax","confidence","class","name"])
+        return pd.DataFrame(columns=["xmin","ymin","xmax","ymax","confidence"])
     
     merged = pd.concat(img_df, ignore_index=True)
-
-    boxes = torch.tensor(merged[["xmin","ymin","xmax","ymax"]].to_numpy(dtype=np.float32))
-    scores = torch.tensor(merged["confidence"].to_numpy(dtype=np.float32))
-
-    retain = ops.nms(boxes,scores,iou_threshold=0.3)
-    merged = merged.iloc[retain.numpy()].reset_index(drop = True)
+    merged = wbf(merged,iou_threshold=0.1)
 
     return merged
 
@@ -106,7 +172,7 @@ def do_tiling_det(model, img_path, tile_x=1000, tile_y = 750 , overlap= 0.2):
 model_segmentation = TS_segmenter(0.5)
 
 model = s_custom_model(num_classes,img_height,img_width)
-model_classifier = TS_classifier(model,0.8)
+model_classifier = TS_classifier(model,0.9)
 img_folder = Path("/home/panda/projects/german-street-sign/Data/raw_data/final_test_img")
 
 with open(info_file,'a') as f:
@@ -122,7 +188,7 @@ for img_path in sorted(img_folder.glob("*.jpg")):
         f.write("\n")
 
     #result_segmentation = model_segmentation.do_detection(img_path)
-    result_detection = do_tiling_det(model_segmentation.model, img_path, tile_x = 800, tile_y = 600, overlap = 0.2 )
+    result_detection = do_tiling_det(model_segmentation.model, img_path, tile_x = 800, tile_y = 600, overlap = 0.2, pad=100 )
     det_num = 0
     img = cv2.imread(str(img_path))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -163,7 +229,7 @@ for img_path in sorted(img_folder.glob("*.jpg")):
         pred_id = class_ids.item()
         pred_prob = prob_vals.item()
         pred_label = class_names.get(pred_id, f"Unknown({pred_id})")
-        if pred_prob >= .70:
+        if pred_prob >= .87:
             with open(info_file,'a') as f:
                 f.write(f"Class No. {pred_id}: {pred_label}, Probability: {pred_prob}\n")
 

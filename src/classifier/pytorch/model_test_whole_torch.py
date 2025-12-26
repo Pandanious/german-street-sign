@@ -7,14 +7,16 @@ class TS_segmenter:
         self.model = torch.hub.load(
                     '/home/panda/projects/german-street-sign/yolov5',
                     'custom',  
-                    path='/home/panda/projects/german-street-sign/yolov5/runs/train/mask_yolov5m_new/weights/best.pt',  
+                    path='/home/panda/projects/german-street-sign/models/yolo5m_multiscale_weig.pt',  
  #                   path='/home/panda/projects/german-street-sign/yolov5/runs/train/mask_yolov5s_new/weights/best.pt',
                     source='local'  
                     )
         self.model.eval()
         self.model.conf = conf_threshold
+        
+        
 
-    def  do_prediction(self, img_path):
+    def  do_detection(self, img_path):
 
         
         with torch.inference_mode():
@@ -41,7 +43,7 @@ class TS_classifier:
         self.model_classifier.conf = conf_threshold
 
 
-    def  do_prediction(self, img_path):
+    def  do_classification(self, img_path):
 
         
         with torch.inference_mode():

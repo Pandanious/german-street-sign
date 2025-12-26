@@ -47,6 +47,8 @@ ClassId, Name
 45,Mandatory Right
 46,Bike Lane
 47,Bus Lane
-48,Bike-left-Pedestrian-right
+48,Bike-Left-Pedestrian-Right
 49,No-Stopping-No-Parking
 50,Pedestrian lane
+51,Pedestrian-Left-Bike-Right
+52,No Bicycles
