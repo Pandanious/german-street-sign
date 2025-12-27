@@ -1,55 +1,64 @@
-# German Street Sign Classifier & Segmenter
+# German Street Sign Classifier & Detector
 
-## Professional Summary
-- Delivered an end-to-end traffic sign understanding system pairing YOLOv5 segmentation with custom PyTorch classifiers for the German Traffic Sign Recognition Benchmark (GTSRB).
-- Re-engineered the legacy Keras stack into a flexible Torch pipeline with reproducible preprocessing, training, and evaluation stages.
-- Focused on real-world deployment constraints: deterministic preprocessing, modular checkpoints, and CLI-driven inference.
+## Summary
+- Created a classification and detection pipeling with pytorch for german street signs based on GTSRB dataset.
+- Yolov5 is used as detector.
+- Custom written models are used for classification using pytorch.
+- To increase dataset for both classification and detection, additional data was gathered personally as well as synthetically created (for detector) and heavily augmented for both cases.
+- Certain problems arose while detection (signs not being found, incorrect items being found).  
+- The main issue due to memory restrictions (3060ti GPU), training for Yolov5 was done with a reduced image size (640), this when applied to images from a phone (~4000x3000 pixels) would make small street signs almost invisible. 
+- Fixed this issue with tiling the image into smaller parts and then give it to the detector. 
+- To fix the overlapping regions created by the tiling, Weighted Box Fusion was used as well as and an addtional padding around crops from the original image.
 
 ## Key Contributions
-- **Segmentation:** Fine-tuned YOLOv5 models (`mask_yolov5m_new`, `mask_yolov5s_new`) for sign detection using custom confidence thresholds and local weight artifacts.
-- **Classification (PyTorch):** Implemented multiple architectures (`GTSRBModel`, `s_custom_model`) with dynamic flatten sizing, Dropout2d regularization, weight decay, and cosine LR scheduling.
-- **Classification (Keras legacy):** Maintained the original TensorFlow/Keras classifiers (`GTSRB_model`, `TSCNN_model`, `LTSNet_model`, `soham_custom_model`) to benchmark the Torch port and provide backwards compatibility.
-- **Data Pipeline:** Built torchvision-based loaders mirroring Keras augmentations (resize, rotation, translation, brightness jitter) with train/val/test splits from `post_split.csv`.
-- **Training Automation:** Authored `model_train_torch.py` to log metrics, checkpoint weights under `models/pytorch/`, and emit epoch-by-epoch performance summaries.
-- **Testing & Inference:** Created `model_test_torch.py` and `segment_classy_in_one.py` scaffolding to combine detection + classification on arbitrary images.
+- **Detection (YOLOv5):** Local YOLOv5 weights are loaded via `torch.hub` from the `yolov5/` checkout for street-sign localization.
+- **Tiling + WBF Inference:** `det_classy_in_one_wbf.py` tiles large images, pads overlaps, and merges detections with Weighted Box Fusion before classification.
+- **Classification (PyTorch):** Implemented `GTSRBModel`, `LTSModel`, and `s_custom_model` in `models_torch.py` with dropout and dynamic flatten sizing.
+- **Classification (Keras legacy):** Preserved TensorFlow/Keras training and evaluation scripts under `src/classifier/Keras/` for baseline comparison.
+- **Data Pipeline:** Torch preprocessing in `pre_process_images_torch.py` builds 60x60 padded tensors with augmentation; YOLO dataset splits are handled by `yolo5_detection.py`.
 
 ## Technical Stack
 - **Vision Models:** PyTorch 2.x, Torchvision, YOLOv5 (local hub load).
-- **Data Handling:** Pandas, Pillow, torchvision transforms, custom `GTSRBDataset`.
-- **Tooling:** Python 3.11 virtualenv (`seg_cls_venv`), Git/GitHub, SSH-based deployment keys.
+- **Data Handling:** Pandas, OpenCV, Pillow, torchvision transforms.
+- **Legacy Baseline:** TensorFlow/Keras (classifier training + evaluation).
+- **Tooling:** Python 3.11 virtualenv (`seg_cls_venv`), Git/GitHub.
+
+## Project Layout
+- `src/Detection/` YOLO dataset prep, detection debugging, and config (`yolo.yaml`).
+- `src/classifier/pytorch/` PyTorch models, training, and end-to-end inference scripts.
+- `src/classifier/Keras/` legacy TensorFlow/Keras models and training.
+- `models/` saved weights and metric logs.
+- `Results/` annotated images and run outputs.
 
 ## Responsibilities & Workflow
 1. **Data Preparation**
-   - Source splits: `Data/raw_data/post_split.csv`, `Test.csv`.
-   - Commands:
-     - `python -m src.classifier.pytorch.pre_process_images_torch` for classifier-ready tensors (invoked indirectly by training/testing scripts).
-     - `python src/Segmentation/yolo5_segmentation.py --images <img_dir> --labels <lbl_dir> --output <mask_split_dir>` to build YOLOv5-ready train/val splits.
+   - Classification splits: `Data/raw_data/post_split.csv`, `Data/raw_data/Test.csv`.
+   - YOLO split helper:
+     - `python src/Detection/yolo5_detection.py --images <img_dir> --labels <lbl_dir> --output <mask_split_dir>`
+   - Torch preprocessing:
+     - `python -m src.classifier.pytorch.pre_process_images_torch`
 2. **Model Training**
    - Torch classifier: `python src/classifier/pytorch/model_train_torch.py`
    - Keras baseline (historical): `python src/classifier/Keras/model_train.py`
-3. **Evaluation**
-   - Torch: `python src/classifier/pytorch/model_test_torch.py --checkpoint <path>`
-4. **End-to-End Demo**
-   - `python src/classifier/pytorch/segment_classy_in_one.py` (script expects YOLO weights + classifier checkpoints to be present and writes annotated results under `Data/raw_data/final_test_img/Results`).
+3. **Detection + Classification**
+   - End-to-end tiling + WBF inference:
+     - `python src/classifier/pytorch/det_classy_in_one_wbf.py` (uses hardcoded paths for weights and inputs).
+4. **Quick Checks**
+   - Detection sanity check: `python src/Detection/test_detection.py`
+   - Torch detector/classifier helpers: `python src/classifier/pytorch/model_test_whole_torch.py`
 
 ## Results Snapshot
-- End-to-end demos pair YOLOv5 masks with the PyTorch classifiers to reach ~90%+ real-image accuracy even when lighting and motion blur are present.
-- Validation accuracy for the main PyTorch models after ~60 epochs:
+- Annotated outputs are written under `Results/` and summarized in `Results/res.txt`.
+- Training logs for PyTorch runs are saved under `models/pytorch/*.txt`.
+- Prediction dumps live in `src/classifier/pytorch/model_test_torch_predictions.txt`.
 
-| Model Variant | Framework | Softmax | Regularization | Scheduler | Val Accuracy (epoch ~60) |
-|---------------|-----------|---------|----------------|-----------|--------------------------|
-| GTSRBModel    | PyTorch   | Removed | Baseline       | None      | ~97%                     |
-| s_custom_model| PyTorch   | Dropout2d + WD | Cosine LR | CosineAnnealing | ~95% (improving) |
-| Keras Custom  | Keras     | Enabled | Dropout        | N/A       | ~92% baseline            |
-
-Captured results include street signs that are not part of the official GTSRB label set; these cases are explicitly tagged as `Unknown` so they can be reviewed without polluting benchmark accuracy. *(PyTorch metrics logged under `models/pytorch/*.txt`; Keras runs under `models/*.keras`.)*
-
-## Deployment Readiness
-- YOLO weights stored locally under `yolov5/runs/train/...`.
-- PyTorch checkpoints saved to `models/pytorch/*.pt`; accompanying metric logs provide audit trails.
-
+## Deployment Notes
+- YOLOv5 weights are loaded from local paths in `model_test_whole_torch.py` and `test_detection.py`.
+- PyTorch checkpoints are saved in `models/pytorch/*.pt` and referenced by inference scripts.
+- Most scripts use absolute paths; adjust them if the repo is moved.
 
 ## Next Steps
-- Harden `segment_classy_in_one.py` CLI for batch inference and visualization.
+- Harden CLI flags for the end-to-end inference script and remove hardcoded paths.
 - Quantize/class-prune classifiers for edge deployment.
 - Expand augmentation policy (color constancy, blur) to match roadside conditions.
+- Future work: finish the custom detector experiments under `src/Detection/custom_detector/` (DETR/ResNet-FPN) and compare against YOLOv5.
