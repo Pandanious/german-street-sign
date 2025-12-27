@@ -34,7 +34,7 @@ class TS_segmenter:
 
 class TS_classifier:
     #model_path = "/home/panda/projects/german-street-sign/models/pytorch/LTSM_model.pt"
-    model_path = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_new_dataset.pt"
+    model_path = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_53_dataset.pt"
     def __init__(self, model_classifier, conf_threshold):
 
         self.model_classifier = model_classifier
@@ -61,4 +61,4 @@ if __name__ == "__main__":
     model = TS_segmenter(0.8)
     img_path = '/home/panda/projects/german-street-sign/Data/processed_data/mask_split/test/images/0075.jpg'
     print("predictions = ")
-    print(model.do_prediction(img_path))
+    print(model.do_detection(img_path))

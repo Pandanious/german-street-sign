@@ -22,6 +22,10 @@ __pycache__/
 
 models/
 mask_gen/
+Deformable-DETR/
 
 yolov5/
+
 Results/
+
+mmcv/

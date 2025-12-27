@@ -20,11 +20,11 @@ def train(num_epochs = epoch, lr = 1e-3):
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=num_epochs, eta_min=1e-5)
     #optimizer = torch.optim.Adam(model.parameters(), lr = lr,)
     #checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/gtsrb_model_without_softmax.pt"
-    checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_new_dataset.pt"
+    checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_53_dataset.pt"
     #checkpoint_path = "/home/panda/projects/german-street-sign/models/pytorch/LTSM_model.pt"
     #output_metric = "/home/panda/projects/german-street-sign/models/pytorch/LTSM_model.txt"
     #output_metric = "/home/panda/projects/german-street-sign/models/pytorch/gtsrb_model_without_softmax.txt"
-    output_metric = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_new_dataset.txt"
+    output_metric = "/home/panda/projects/german-street-sign/models/pytorch/custom_model_53_dataset.txt"
     metric_log = []
 
     for epoch in range(num_epochs):

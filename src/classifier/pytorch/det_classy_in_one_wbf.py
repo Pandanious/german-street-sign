@@ -13,7 +13,7 @@ from pathlib import Path
 import csv
 import os
 
-num_classes = 53
+num_classes = 54
 img_width = 60
 img_height = 60
 det_num = 0
@@ -229,24 +229,28 @@ for img_path in sorted(img_folder.glob("*.jpg")):
         pred_id = class_ids.item()
         pred_prob = prob_vals.item()
         pred_label = class_names.get(pred_id, f"Unknown({pred_id})")
-        if pred_prob >= .87:
-            with open(info_file,'a') as f:
-                f.write(f"Class No. {pred_id}: {pred_label}, Probability: {pred_prob}\n")
+        if pred_id != 53:
+            if pred_prob >= .70:
+                with open(info_file,'a') as f:
+                    f.write(f"Class No. {pred_id}: {pred_label}, Probability: {pred_prob}\n")
 
-            res_text = f"{pred_id}: {pred_label}"
+                #res_text = f"{pred_id}: {pred_label}"
+                res_text = f"{pred_id}"
+            else:
+                res_text = "Unknown Sign"
+        
+            cv2.rectangle(img,(xmin,ymin),(xmax,ymax),(0,255,0),8)
+            #print("res_text ", res_text, "Prob: ",pred_prob )
+            cv2.putText(   img,
+                        res_text,
+                        text_org,
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        2,
+                        (0, 255, 255),
+                        4,
+                        cv2.LINE_AA,)
         else:
-            res_text = "Unknown Sign"
-
-        cv2.rectangle(img,(xmin,ymin),(xmax,ymax),(0,255,0),8)
-        #print("res_text ", res_text, "Prob: ",pred_prob )
-        cv2.putText(   img,
-                    res_text,
-                    text_org,
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    2,
-                    (0, 255, 255),
-                    4,
-                    cv2.LINE_AA,)
+            continue
         
     resized_down = cv2.resize(img, None, fx=.4, fy=.4, interpolation=cv2.INTER_LINEAR)
     resized_down = cv2.cvtColor(resized_down, cv2.COLOR_RGB2BGR)
