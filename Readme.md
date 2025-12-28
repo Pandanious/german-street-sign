@@ -10,7 +10,7 @@
 - Fixed this issue with tiling the image into smaller parts and then give it to the detector. 
 - To fix the overlapping regions created by the tiling, Weighted Box Fusion was used as well as and an addtional padding around crops from the original image.
 
-![Result Gif @ 24fps]https://drive.google.com/file/d/1f3zZjzR0MQ4_aDBoYrvxijZadyGZnxLb/view?usp=drive_link)
+[Result Gif @ 24fps]https://drive.google.com/file/d/1f3zZjzR0MQ4_aDBoYrvxijZadyGZnxLb/view?usp=drive_link)
 
 
 
