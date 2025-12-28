@@ -18,7 +18,7 @@ img_width = 60
 img_height = 60
 det_num = 0
 
-info_file = Path("/home/panda/projects/german-street-sign/Results/res.txt") 
+info_file = Path("/home/panda/projects/german-street-sign/Results/res_video.txt") 
 os.makedirs(info_file.parent, exist_ok=True)
 
 CLASS_REF_PATH = Path("/home/panda/projects/german-street-sign/src/classifier/class_ref.csv")
@@ -91,9 +91,9 @@ def wbf(df,iou_threshold):
 
 
 
-def do_tiling_det(model, img_path, tile_x=640, tile_y = 640 , overlap= 0.3, pad = 100):
+def do_tiling_det(model, frame, tile_x=640, tile_y = 640 , overlap= 0.3, pad = 100):
 
-    bgr_img = cv2.imread(str(img_path))
+    bgr_img = frame
     if bgr_img is None:
         return pd.DataFrame(columns=["xmin","ymin","xmax","ymax","confidence"])
     rgb_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2RGB)
@@ -154,101 +154,150 @@ def do_tiling_det(model, img_path, tile_x=640, tile_y = 640 , overlap= 0.3, pad 
 
     return merged
 
+def helper_box(img,box_text, margin=20, padding=10,
+               font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1.2, thickness=1,
+               text_color=(0, 255, 255), box_color=(0, 0, 0), line_gap=6):
+    if not box_text:
+        return img
+    sizes = [cv2.getTextSize(t,font,font_scale,thickness) for t in box_text]
+    max_w = max(s[0][0] for s in sizes)
+    line_h = max(s[0][1] for s in sizes)
+    box_h = len(box_text) * (line_h + line_gap) - line_gap + 2 * padding
+    box_w = max_w + 2 * padding
+    h, w = img.shape[:2]
+
+    x1 = margin
+    y2 = h - margin
+    y1 = max(0, y2 - box_h)
+    cv2.rectangle(img, (x1, y1), (x1 + box_w, y2), box_color, -1)
+    y = y2 - padding
+    for text in reversed(box_text):
+        cv2.putText(img, text, (x1 + padding, y), font, font_scale, text_color, thickness, cv2.LINE_AA)
+        y -= line_h + line_gap
 
 
 
-# classification model
 
+
+
+####################################################################################################################################################
+# detection and classification start here!!! 
+####################################################################################################################################################
 
 model_segmentation = TS_segmenter(0.5)
 
 model = s_custom_model(num_classes,img_height,img_width)
 model_classifier = TS_classifier(model,0.9)
-img_folder = Path("/home/panda/projects/german-street-sign/Data/raw_data/final_test_img")
+data_folder = Path("/home/panda/projects/german-street-sign/Data/test")
+
+
 
 with open(info_file,'a') as f:
     f.write("predictions\n")
 
 result_dir = Path("/home/panda/projects/german-street-sign/Results")
+result_dir.mkdir(parents=True,exist_ok=True)
 
 
-for img_path in sorted(img_folder.glob("*.jpg")):
+for img_path in sorted(data_folder.glob("*.mp4")):
     with open(info_file,'a') as f:
         f.write("-------------------------------------------------------------------------------------------------------\n")
         f.write(f"Processing {img_path.name}\n")
         f.write("\n")
+    cap = cv2.VideoCapture(str(img_path))
+    cap_fps = cap.get(cv2.CAP_PROP_FPS)
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    out_path = str(result_dir / f"{img_path.stem}_annotated.mp4")
+
+    writer  = None
+
+    while True:
+        ret,frame = cap.read()        
+        if not ret:
+           print("End of video")
+           break
+        fh,fw = frame.shape[:2]
+        print(fh,fw)
+
+        if writer is None:
+            writer = cv2.VideoWriter(out_path,fourcc, cap_fps ,(fw,fh))
 
     #result_segmentation = model_segmentation.do_detection(img_path)
-    result_detection = do_tiling_det(model_segmentation.model, img_path, tile_x = 800, tile_y = 600, overlap = 0.2, pad=100 )
-    det_num = 0
-    img = cv2.imread(str(img_path))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        result_detection = do_tiling_det(model_segmentation.model, frame, tile_x = fw//4, tile_y = fh//4, overlap = 0.2, pad=100 )
+        det_num = 0
+        img = frame
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        box_texts = []
 
-    for index, row in result_detection.iterrows():
-        det_num += 1
-        xmin = int(row["xmin"])
-        ymin = int(row["ymin"])
-        xmax = int(row["xmax"])
-        ymax = int(row["ymax"])
-        
-        detector_prob = float(row['confidence'])
-        with open(info_file,'a') as f:
-            f.write("Running Detection\n")
-            f.write(f"Probability of {det_num}: {detector_prob}\n")
-            f.write(f"Bounding Box: x1: {xmin}, y1: {ymin}, x2: {xmax}, y2: {ymax}\n")
+        for index, row in result_detection.iterrows():
+            det_num += 1
+            xmin = int(row["xmin"])
+            ymin = int(row["ymin"])
+            xmax = int(row["xmax"])
+            ymax = int(row["ymax"])
             
+            detector_prob = float(row['confidence'])
+            with open(info_file,'a') as f:
+                f.write("Running Detection\n")
+                f.write(f"Probability of {det_num}: {detector_prob}\n")
+                f.write(f"Bounding Box: x1: {xmin}, y1: {ymin}, x2: {xmax}, y2: {ymax}\n")
+                
 
-        #text_org = (xmin+1, int((ymax+ymin)/2))
-        text_org = (xmin, ymax+50)
-        
-        cropped_img = img[ymin:ymax, xmin:xmax]
-        #print(cropped_img.shape)
-        
-        #cropped_img = np.expand_dims(cropped_img,axis=0)
-        class_names = ref_class_names(CLASS_REF_PATH)
-        #print(cropped_img.shape)
-        transform = transforms.Compose([transforms.ToTensor()])
-        img_tensor = transform(cropped_img)                                                                            # Padding to mantain aspect ration while resizing.
-        img_tensor = resize_with_aspect(img_tensor,target=img_height)                                                  #
-        transform = transforms.Compose([transforms.Normalize(mean=[0.5]*3,std=[0.5]*3)])
-        
-        proc_img = transform(img_tensor).unsqueeze(0)
-        with open(info_file,'a') as f:
-            f.write("Running Classification\n")
-        result_classification = model_classifier.do_classification(proc_img)
-        prob_vals, class_ids = result_classification.max(dim=1)
-        pred_id = class_ids.item()
-        pred_prob = prob_vals.item()
-        pred_label = class_names.get(pred_id, f"Unknown({pred_id})")
-        if pred_id != 53:
-            if pred_prob >= .70:
-                with open(info_file,'a') as f:
-                    f.write(f"Class No. {pred_id}: {pred_label}, Probability: {pred_prob}\n")
+            #text_org = (xmin+1, int((ymax+ymin)/2))
+            text_org = xmin+10, ymin
+            
+            cropped_img = img[ymin:ymax, xmin:xmax]
+            #print(cropped_img.shape)
+            
+            #cropped_img = np.expand_dims(cropped_img,axis=0)
+            class_names = ref_class_names(CLASS_REF_PATH)
+            #print(cropped_img.shape)
+            transform = transforms.Compose([transforms.ToTensor()])
+            img_tensor = transform(cropped_img)                                                                            # Padding to mantain aspect ration while resizing.
+            img_tensor = resize_with_aspect(img_tensor,target=img_height)                                                  #
+            transform = transforms.Compose([transforms.Normalize(mean=[0.5]*3,std=[0.5]*3)])
+            
+            proc_img = transform(img_tensor).unsqueeze(0)
+            with open(info_file,'a') as f:
+                f.write("Running Classification\n")
+            result_classification = model_classifier.do_classification(proc_img)
+            prob_vals, class_ids = result_classification.max(dim=1)
+            pred_id = class_ids.item()
+            pred_prob = prob_vals.item()
+            pred_label = class_names.get(pred_id, f"Unknown({pred_id})")
+            if pred_id != 53:
+                if pred_prob >= .70:
+                    with open(info_file,'a') as f:
+                        f.write(f"Class No. {pred_id}: {pred_label}, Probability: {pred_prob}\n")
 
-                #res_text = f"{pred_id}: {pred_label}"
-                res_text = f"{pred_id}"
+                    #res_text = f"{pred_id}: {pred_label}"
+                    res_text = f"{pred_id}"
+                    box_text = f"{pred_id}: {pred_label}, Probability: {pred_prob:.2f}"
+                    box_texts.append(box_text)
+                    cv2.rectangle(img,(xmin,ymin),(xmax,ymax),(0,255,0),3)
+                #print("res_text ", res_text, "Prob: ",pred_prob )
+                    cv2.putText(   img,
+                            res_text,
+                            text_org,
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1,
+                            (0, 255, 255),
+                            2,
+                            cv2.LINE_AA,)
+                    helper_box(img,box_texts)
+
+                else:
+                    continue
             else:
-                res_text = "Unknown Sign"
+                continue
         
-            cv2.rectangle(img,(xmin,ymin),(xmax,ymax),(0,255,0),8)
-            #print("res_text ", res_text, "Prob: ",pred_prob )
-            cv2.putText(   img,
-                        res_text,
-                        text_org,
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        2,
-                        (0, 255, 255),
-                        4,
-                        cv2.LINE_AA,)
-        else:
-            continue
-        
-    resized_down = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    result_dir.mkdir(parents=True,exist_ok=True)
-    out_path = result_dir / f"{img_path.stem}_annotated.jpg"
-    cv2.imwrite(str(out_path),resized_down)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        writer.write(img)
 
-    
+    if writer is not None:
+        writer.release()
+    cap.release()
+
 
 
     

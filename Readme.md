@@ -10,6 +10,11 @@
 - Fixed this issue with tiling the image into smaller parts and then give it to the detector. 
 - To fix the overlapping regions created by the tiling, Weighted Box Fusion was used as well as and an addtional padding around crops from the original image.
 
+![Result Gif @ 24fps](Results/testvideo1_24fps.gif)
+
+
+
+
 ## Key Contributions
 - **Detection (YOLOv5):** Local YOLOv5 weights are loaded via `torch.hub` from the `yolov5/` checkout for street-sign localization.
 - **Tiling + WBF Inference:** `det_classy_in_one_wbf.py` tiles large images, pads overlaps, and merges detections with Weighted Box Fusion before classification.
@@ -53,7 +58,7 @@
 - Prediction dumps live in `src/classifier/pytorch/model_test_torch_predictions.txt`.
 
 ## Deployment Notes
-- YOLOv5 weights are loaded from local paths in `model_test_whole_torch.py` and `test_detection.py`.
+- YOLOv5 weights are loaded from local paths in `model_test_whole_torch.py`.
 - PyTorch checkpoints are saved in `models/pytorch/*.pt` and referenced by inference scripts.
 - Most scripts use absolute paths; adjust them if the repo is moved.
 
