@@ -10,7 +10,10 @@
 - Fixed this issue with tiling the image into smaller parts and then give it to the detector. 
 - To fix the overlapping regions created by the tiling, Weighted Box Fusion was used as well as and an addtional padding around crops from the original image.
 
+## Result Example
 ![Result Gif @ 24fps](https://github.com/Pandanious/german-street-sign/releases/download/res/testvideo1_24fps.gif)
+
+- The gif above was created with ezgif, from a mp4 result video running at 28 fps. The gif is running at 24 fps. 
 
 
 
